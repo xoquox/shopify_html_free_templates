@@ -1,0 +1,149 @@
+{{ email_title }}
+	{% assign current_date = date | date: "%b %d" %}
+	{% assign current_time = date | date: "%l:%M %P" %}
+	{% if customer.name %}
+		{{ customer.name }} hat die Bestellung {{ name }} am {{ current_date }} um {{ current_time | strip }} aufgegeben.
+	{% else %}
+		Jemand hat die Bestellung {{ name }} am {{ current_date }} um {{ current_time | strip }} aufgegeben.
+	{% endif %}
+	https://{{ shop.permanent_domain }}/admin/orders/{{ id }}
+                                        
+	Bestellübersicht
+------------------------------------------------------------------------                                        
+  {% for line in subtotal_line_items %}
+  
+          {% if line.quantity < line.quantity %}
+            {% capture line_display %} {{ line.quantity }} of {{ line.quantity }} {% endcapture %}
+          {% else %}
+            {% assign line_display = line.quantity  %}
+          {% endif %}
+          
+            {% if line.product.title == blank %}
+              {{ line.title }}
+            {% else %}
+              {{ line.product.title }}
+            {% endif %}
+
+          
+          {% if line.quantity %}
+            {% if line.original_line_price != line.final_line_price %}
+              {{ line.original_price | money }}
+            {% endif %}
+             {{ line.final_price | money }} × {{ line.quantity }} 
+          {% endif %}
+          
+          {% if line.variant.title != 'Default Title' %}
+         {{ line.variant.title }}
+
+  
+          {% endif %}
+
+          {% if line.sku != blank %}
+            SKU: {{ line.sku }}
+          {% endif %}
+          
+          {% if line.selling_plan_allocation != nil %}
+            {{ line.selling_plan_allocation.selling_plan.name }}
+          {% endif %}
+
+ 
+              {% if line.final_line_price > 0 %}
+                {{ line.final_line_price | money }}
+                  {% if line.unit_price_measurement %}
+                    >
+                      {{ line.unit_price | money }}/
+                      {%- if line.unit_price_measurement.reference_value != 1 -%}
+                        {{- line.unit_price_measurement.reference_value -}}
+                      {%- endif -%}
+                      {{ line.unit_price_measurement.reference_unit }}
+                    
+                  {% endif %}
+              {% else %}
+                Kostenlos
+              {% endif %}
+            {% endfor %}
+
+        
+        
+        {% assign discount_value = 0 %}
+        {% for discount_application in discount_applications %}
+          {% if discount_application.target_selection == 'all' %}
+              {% assign discount_value = discount_application.total_allocated_amount %}
+          {% endif %}
+        {% endfor %}
+        
+
+
+        Zwischensumme
+
+
+
+      {{ subtotal_price | plus: discount_value | money }}
+ 
+ 
+
+
+        {% for discount_application in discount_applications %}
+          {% if discount_application.target_selection == 'all' %}
+            {% capture discount_title %}
+              {% if discount_application.title %}
+                {{ discount_application.title | upcase }}
+              {% else %}
+                Rabatt
+              {% endif %}
+            {% endcapture %}
+            
+
+		Rabatt
+        {% if discount_title.size > 0 %}({{ discount_title | strip }}){% endif %}
+        {{ discount_application.total_allocated_amount | money }}
+
+          {% endif %}
+        {% endfor %}
+
+        {% if delivery_method == 'pick-up' %}
+        
+        Abholungen
+      {{ shipping_price | money }}
+    
+
+        {% else %}
+         Versand
+         {% if shipping_method.title.size > 0 %}({{ shipping_method.title }}){% endif %}
+         {{ shipping_price | money }}
+    
+        {% endif %}
+
+        {% for tax_line in tax_lines %}
+          Steuern
+          {% if tax_line.title.size > 0 %}({{ tax_line.title }} {{ tax_line.rate | times: 100 }}%){% endif %}
+      {{ tax_line.price | money }}
+    {% endfor %}
+
+
+      Gesamt
+      {{ total_price | money_with_currency }}
+    {% if gateway %}
+                               Art der Zahlungsverarbeitung
+                               {{ gateway }}
+                            {% endif %}
+                            {% if requires_shipping and shipping_address %}
+                                {% if shipping_methods.first %}
+                                    Zustellmethode
+                                                {% for shipping_method in shipping_methods %}
+                                                   {{ shipping_method.title }}
+                                                {% endfor %}
+                                            
+                                {% endif %}
+                                Lieferadresse
+                                                {{ shipping_address.name }}
+                                                {{ shipping_address.street }}
+                                                {{ shipping_address.city }},
+                                                {{ shipping_address.province }}
+                                                {{ shipping_address.zip }}
+                                                {{ shipping_address.country }}
+                                                {{ shipping_address.phone }}
+                                            
+                            {% endif %}
+
+           
